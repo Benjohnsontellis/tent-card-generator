@@ -268,7 +268,7 @@ def build_pdf(
             if n_boxes == 1:
                 # Single box — just its own width, left-aligned
                 u, p   = login_data[0]
-                row1   = [Paragraph(f"<b>Username:</b> {u}", small)]
+                row1   = [Paragraph(f"<b>User Name:</b> {u}", small)]
                 row2   = [Paragraph(f"<b>Password:</b> {p}", small)]
                 cw     = [BOX_W]
                 style  = [
@@ -289,7 +289,7 @@ def build_pdf(
                 u1, p1 = login_data[1]
                 GAP_COL = 10   # small gap between the two boxes
                 cw     = [BOX_W, GAP_COL, BOX_W]
-                row1   = [Paragraph(f"<b>Username:</b> {u0}", small), Paragraph("", small), Paragraph(f"<b>Username:</b> {u1}", small)]
+                row1   = [Paragraph(f"<b>User Name:</b> {u0}", small), Paragraph("", small), Paragraph(f"<b>User Name:</b> {u1}", small)]
                 row2   = [Paragraph(f"<b>Password:</b> {p0}", small), Paragraph("", small), Paragraph(f"<b>Password:</b> {p1}", small)]
 
                 login_table = Table([row1, row2], colWidths=cw, hAlign='LEFT')
@@ -316,9 +316,9 @@ def build_pdf(
                 spacer_w = (PAGE_W - 3 * BOX_W) / 2
                 cw     = [BOX_W, spacer_w, BOX_W, spacer_w, BOX_W]
                 row1   = [
-                    Paragraph(f"<b>Username:</b> {u0}", small), Paragraph("", small),
-                    Paragraph(f"<b>Username:</b> {u1}", small), Paragraph("", small),
-                    Paragraph(f"<b>Username:</b> {u2}", small),
+                    Paragraph(f"<b>User Name:</b> {u0}", small), Paragraph("", small),
+                    Paragraph(f"<b>User Name:</b> {u1}", small), Paragraph("", small),
+                    Paragraph(f"<b>User Name:</b> {u2}", small),
                 ]
                 row2   = [
                     Paragraph(f"<b>Password:</b> {p0}", small), Paragraph("", small),
@@ -381,8 +381,8 @@ def build_pdf(
             # ── Left column: patient identity ─────────────────
             patient_info = Table([
                 [Paragraph(f"<b>{pat_label.upper()}:</b> {name.upper()}", small)],
-                [Paragraph(f"MRN: {mrn}", small)],
-                [Paragraph(f"FIN: {fin or ''}", small)],
+                [Paragraph(f"<b>MRN:</b> {mrn}", small)],
+                [Paragraph(f"<b>FIN:</b> {fin or ''}", small)],
             ], colWidths=[col_half - 0.3 * inch])
 
             patient_info.setStyle(TableStyle([
@@ -398,7 +398,7 @@ def build_pdf(
 
             for i in range(0, len(location_fields), 2):
                 pair = location_fields[i:i + 2]
-                line = ",  ".join([f"{lbl}: {val}" for lbl, val in pair])
+                line = ",  ".join([f"<b>{lbl}:</b> {val}" for lbl, val in pair])
                 combined_lines.append([Paragraph(line, location_text_style)])
 
             location_rows = [[Paragraph("<b>LOCATION</b>", location_label_style)]]
@@ -493,9 +493,9 @@ def build_pdf(
                 qr_img = Image(qr, 0.85 * inch, 0.85 * inch)   # Fix 5: smaller QR
 
                 cell = Table([
-                    [Paragraph(f"<b>{med_name}</b>", bold_center)],
+                    [Paragraph(f"{med_name}", small)],
                     [qr_img]
-                ], colWidths=[PAGE_W / 2 - 0.2 * inch])
+                ], colWidths=[PAGE_W / 2 - 0.2 * inch], rowHeights=[0.45 * inch, 1.0 * inch])
 
                 cell.setStyle(TableStyle([
                     ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
@@ -516,7 +516,7 @@ def build_pdf(
         if meds:
 
             elements.append(Spacer(1, 16))
-            elements.append(Paragraph("<b>Medications</b>", section_head))
+            elements.append(Paragraph("<b>Medications</b>", bold_center))
             elements.append(Spacer(1, 6))
 
             grid  = []
@@ -568,9 +568,9 @@ def build_pdf(
                 qr_img = Image(qr, 0.85 * inch, 0.85 * inch)   # Fix 5: smaller QR
 
                 cell = Table([
-                    [Paragraph(f"<b>{specimen}</b>", bold_center)],
+                    [Paragraph(f"{specimen}", small)],
                     [qr_img]
-                ], colWidths=[PAGE_W / 2 - 0.2 * inch])
+                ], colWidths=[PAGE_W / 2 - 0.2 * inch], rowHeights=[0.45 * inch, 1.0 * inch])
 
                 cell.setStyle(TableStyle([
                     ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
@@ -591,7 +591,7 @@ def build_pdf(
         if specimens:
 
             elements.append(Spacer(1, 16))
-            elements.append(Paragraph("<b>Specimens</b>", section_head))
+            elements.append(Paragraph("<b>Specimens</b>", bold_center))
             elements.append(Spacer(1, 6))
 
             grid  = []
