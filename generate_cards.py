@@ -29,29 +29,41 @@ PAGE_W = 7.0 * inch
 # CLEAN VALUE
 # -----------------------------
 def clean(value):
-
     if pd.isna(value):
         return None
-
     value = str(value).strip()
-
     if value == "" or value.lower() == "nan":
         return None
-
     return value
 
 
 # -----------------------------
-# CREATE QR CODE
+# CLEAN ID — preserves leading zeros and letter prefixes (MRN, FIN, Visit ID)
 # -----------------------------
+def clean_id(value):
+    """Preserve leading zeros and letter prefixes like AC, MR, 00 etc."""
+    if pd.isna(value):
+        return None
+    value = str(value).strip()
+    if value == "" or value.lower() == "nan":
+        return None
+    return value
+
+
+# -----------------------------
+# CREATE QR CODE — unique file per data value
+# -----------------------------
+_qr_cache = {}
+
 def create_qr(data):
-
-    img = qrcode.make(data)
-
-    path = "temp_qr.png"
-
+    import hashlib, tempfile
+    if data in _qr_cache:
+        return _qr_cache[data]
+    h = hashlib.md5(str(data).encode()).hexdigest()[:12]
+    path = os.path.join(tempfile.gettempdir(), f"qr_{h}.png")
+    img = qrcode.make(str(data))
     img.save(path)
-
+    _qr_cache[data] = path
     return path
 
 
@@ -246,7 +258,7 @@ def build_pdf(
         ]))
 
         elements.append(header)
-        elements.append(Spacer(1, 14))
+        elements.append(Spacer(1, 6))
 
         # ── LOGIN BOXES ───────────────────────────────────────
         # Collect login data first, then render as a flat table
@@ -277,8 +289,10 @@ def build_pdf(
                     ('BACKGROUND',    (0, 0), (0, -1), colors.HexColor('#fafafa')),
                     ('LEFTPADDING',   (0, 0), (-1, -1), 8),
                     ('RIGHTPADDING',  (0, 0), (-1, -1), 8),
-                    ('TOPPADDING',    (0, 0), (-1, -1), 4),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('TOPPADDING',    (0, 0), (-1,  0), 4),
+                    ('BOTTOMPADDING', (0, 0), (-1,  0), 0),
+                    ('TOPPADDING',    (0, 1), (-1,  1), 0),
+                    ('BOTTOMPADDING', (0, 1), (-1,  1), 4),
                 ]
 
                 login_table = Table([row1, row2], colWidths=cw, hAlign='LEFT')
@@ -299,14 +313,16 @@ def build_pdf(
                     ('BOX',           (2, 0), (2, -1), 0.75, colors.HexColor('#aaaaaa')),
                     ('BACKGROUND',    (0, 0), (0, -1), colors.HexColor('#fafafa')),
                     ('BACKGROUND',    (2, 0), (2, -1), colors.HexColor('#fafafa')),
+                    ('LEFTPADDING',   (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING',  (0, 0), (-1, -1), 0),
                     ('LEFTPADDING',   (0, 0), (0, -1), 8),
                     ('RIGHTPADDING',  (0, 0), (0, -1), 8),
                     ('LEFTPADDING',   (2, 0), (2, -1), 8),
                     ('RIGHTPADDING',  (2, 0), (2, -1), 8),
-                    ('LEFTPADDING',   (1, 0), (1, -1), 0),
-                    ('RIGHTPADDING',  (1, 0), (1, -1), 0),
-                    ('TOPPADDING',    (0, 0), (-1, -1), 4),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('TOPPADDING',    (0, 0), (-1,  0), 4),
+                    ('BOTTOMPADDING', (0, 0), (-1,  0), 0),
+                    ('TOPPADDING',    (0, 1), (-1,  1), 0),
+                    ('BOTTOMPADDING', (0, 1), (-1,  1), 4),
                 ]))
 
             else:
@@ -344,8 +360,10 @@ def build_pdf(
                     ('RIGHTPADDING',  (2, 0), (2, -1), 8),
                     ('LEFTPADDING',   (4, 0), (4, -1), 8),
                     ('RIGHTPADDING',  (4, 0), (4, -1), 8),
-                    ('TOPPADDING',    (0, 0), (-1, -1), 4),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('TOPPADDING',    (0, 0), (-1,  0), 4),
+                    ('BOTTOMPADDING', (0, 0), (-1,  0), 0),
+                    ('TOPPADDING',    (0, 1), (-1,  1), 0),
+                    ('BOTTOMPADDING', (0, 1), (-1,  1), 4),
                 ]))
 
             elements.append(login_table)
@@ -358,12 +376,12 @@ def build_pdf(
 
         for n in patients:
 
-            mrn = clean(row.get(f"Patient {n} MRN"))
+            mrn = clean_id(row.get(f"Patient {n} MRN"))
 
             if not mrn:
                 continue
 
-            fin   = clean(row.get(f"Patient {n} FIN"))
+            fin   = clean_id(row.get(f"Patient {n} FIN"))
             last  = clean(row.get(f"Patient {n} Last Name"))
             first = clean(row.get(f"Patient {n} First Name"))
 
@@ -438,7 +456,7 @@ def build_pdf(
 
         for n in patients:
 
-            visit = clean(row.get(f"Visit ID{n}"))
+            visit = clean_id(row.get(f"Visit ID{n}"))
 
             if visit:
 
@@ -484,7 +502,7 @@ def build_pdf(
         for i in range(1, 15):
 
             med_name = clean(row.get(f"Product{i}"))
-            ndc      = clean(row.get(f"NDC{i}"))
+            ndc      = clean_id(row.get(f"NDC{i}"))
 
             if med_name and ndc:
 
@@ -562,7 +580,7 @@ def build_pdf(
         for i in range(1, 10):
 
             specimen = clean(row.get(f"Specimen{i}"))
-            barcode  = clean(row.get(f"Barcode{i}"))
+            barcode  = clean_id(row.get(f"Barcode{i}"))
 
             if specimen and barcode:
 
